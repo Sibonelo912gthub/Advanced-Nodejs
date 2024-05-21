@@ -1,7 +1,26 @@
 import { Environment } from "./environment";
+import { Utils } from "../utils/Utils";
+
+Utils.dotenvConfigs();
 
 export const DevEnvironment: Environment = {
-  db_uri:
-    "mongodb+srv://ssmbambo912:mhlengwa1@swiggyca.oso1q9i.mongodb.net/Cluster0?retryWrites=true&w=majority&appName=swiggyCA",
+  db_uri: process.env.DEV_DB_URI,
+  jwt_secret_key: process.env.DEV_JWT_SECRET_KEY,
+  jwt_refresh_secret_key: process.env.DEV_REFRESH_TOKEN_SECRET,
+  sendgrid: {
+    api_key: process.env.DEV_SENDGRID_API_KEY,
+    email_from: process.env.DEV_SENDGRID_SENDER_EMAIL,
+  },
+  redis: {
+    username: null,
+    password: null,
+    host: process.env.LOCAL_REDIS_HOST,
+    port: parseInt(process.env.LOCAL_REDIS_PORT),
+  },
+  stripe: {
+    // publishable_key: "",//PUBLISHABLE_API_KEY,
+    // secret_key: ""//SECRET_KEY
+    publishable_key: process.env.DEV_STRIPE_PUBLISHABLE_KEY,
+    secret_key: process.env.DEV_STRIPE_SECRET_KEY, //SECRET_KEY
+  },
 };
-//RFK0X7J3tk2olj4R...replacd with mhlengwa1

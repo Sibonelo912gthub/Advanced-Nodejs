@@ -1,35 +1,18 @@
-// import * as express from "express";
-// import * as mongoose from "mongoose";
-// import { getEnvVariables } from "./environments/environment";
-// import UserRouter from "./routers/UserRouter";
-
-// export class Server {
-//   public app: express.Application = express();
-//   constructor() {
-//     this.setConfigs();
-//     this.setRoutes();
-//   }
-
-//   setConfigs() {
-//     this.connectMongoDB();
-//   }
-
-//   connectMongoDB() {
-//     mongoose.connect(getEnvVariables().db_uri).then(() => {
-//       console.log("connetced for real to");
-//     });
-//   }
-
-//   setRoutes() {
-//     this.app.use("/api/user", UserRouter);
-//   }
-// }
-
+import * as bodyParser from "body-parser";
+import * as mongoose from "mongoose";
 import * as express from "express";
 import * as cors from "cors";
-import mongoose from "mongoose";
-import { getEnvVariables } from "./environments/environment";
+import { getEnvironmentVariables } from "./environments/environment";
 import UserRouter from "./routers/UserRouter";
+import BannerRouter from "./routers/BannerRouter";
+import CityRouter from "./routers/CityRouter";
+import CategoryRouter from "./routers/CategoryRouter";
+import ItemRouter from "./routers/ItemRouter";
+import AddressRouter from "./routers/AddressRouter";
+import OrderRouter from "./routers/OrderRouter";
+import * as dotenv from "dotenv";
+import { Utils } from "./utils/Utils";
+import { Redis } from "./utils/Redis";
 
 export class Server {
   public app: express.Application = express();
@@ -38,52 +21,77 @@ export class Server {
     this.setConfigs();
     this.setRoutes();
     this.error404Handler();
+    this.handlerError();
   }
 
-  async setConfigs() {
+  setConfigs() {
+    this.dotenvConfigs();
     this.connectMongoDB();
-    this.allowCors();
+    this.connectRedis();
+    this.allowcors();
     this.configureBodyParser();
+    this.runJobs();
+  }
+  dotenvConfigs() {
+    // dotenv.config({ path: '/.env' });
+    Utils.dotenvConfigs();
   }
 
   connectMongoDB() {
-    mongoose.connect(getEnvVariables().db_uri).then(() => {
-      console.log("Connected to MongoDB");
+    mongoose.connect(getEnvironmentVariables().db_uri).then(() => {
+      console.log("Connected to mongodb...");
     });
+  }
+
+  async connectRedis() {
+    Redis.connectToRedis();
   }
 
   configureBodyParser() {
     this.app.use(
       bodyParser.urlencoded({
-        extends: true,
+        extended: true,
       })
     );
-    //this.app.use(bodyParser.json)
+    //this.app.use(bodyParser.json());
   }
 
-  allowCors() {
+  allowcors() {
     this.app.use(cors());
   }
 
+  runJobs() {
+    // Jobs.executeJobs();
+  }
+
   setRoutes() {
+    this.app.use("/src/uploads", express.static("src/uploads"));
     this.app.use("/api/user", UserRouter);
-  }
-
-  start(port: number) {
-    this.app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
-    });
-  }
-
-  async stop() {
-    await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    this.app.use("/api/banner", BannerRouter);
+    this.app.use("/api/city", CityRouter);
+    this.app.use("/api/category", CategoryRouter);
+    this.app.use("/api/product", ItemRouter);
+    this.app.use("/api/address", AddressRouter);
+    this.app.use("/api/order", OrderRouter);
   }
   error404Handler() {
     this.app.use((req, res) => {
       res.status(404).json({
-        message: " Never Found",
+        message: "Not Found",
         status_code: 404,
+      });
+    });
+  }
+
+  handlerError() {
+    this.app.use((error, req, res, next) => {
+      if (res.headersSent) {
+        return next(error);
+      }
+      const errorStatus = req.errorStatus || 500;
+      res.status(errorStatus).json({
+        message: error.message || "Something went wrong",
+        status_code: errorStatus,
       });
     });
   }

@@ -1,70 +1,49 @@
+import { GlobalMiddleWare } from './../middlewares/GlobalMiddleWare';
+import { UserValidators } from './../validators/UserValidators';
+import { UserController } from './../controllers/UserController';
 import { Router } from "express";
-import { UserController } from "../controllers/UserController";
-import { UserValidators } from "../validators/Uservalidators";
-import { GlobalMidleWare } from "../middlewares/GlobalMiddleWare";
+import { Utils } from '../utils/Utils';
+import * as cors from "cors";
 
 class UserRouter {
-  public router: Router;
 
-  constructor() {
-    this.router = Router();
-    // this.getRoutes();
-    this.postRoutes();
-    this.patchRoutes();
-    this.putRoutes();
-    this.deleteRoutes();
-  }
+    public router: Router;
 
-  postRoutes() {
-    this.router.post(
-      "/signup",
-      UserValidators.signup(),
-      GlobalMidleWare.checkError,
-      UserController.signup
-    );
-  }
+    constructor() {
+        this.router = Router();
+        this.getRoutes();
+        this.postRoutes();
+        this.patchRoutes();
+        this.putRoutes();
+        this.deleteRoutes();
+    }
 
-  patchRoutes() {
-    this.router.patch(
-      "/verify",
-      UserValidators.verifyUserEmail(),
-      UserController.verify
-    );
-  }
+    getRoutes() {
+        this.router.get('/send/verification/email', GlobalMiddleWare.auth, UserController.resendVerificationEmail);
+        this.router.get('/login', UserValidators.login(), GlobalMiddleWare.checkError, UserController.login);
+        this.router.get('/send/reset/password/token', UserValidators.checkResetPasswordEmail(), GlobalMiddleWare.checkError, UserController.sendResetPasswordOtp);
+        this.router.get('/verify/resetPasswordToken', UserValidators.verifyResetPasswordToken(), GlobalMiddleWare.checkError, UserController.verifyResetPasswordToken);
+        this.router.get('/profile', GlobalMiddleWare.auth, UserController.profile);
+    }
 
-  putRoutes() {}
+    postRoutes() {
+        this.router.post('/signup', UserValidators.signup(), GlobalMiddleWare.checkError, UserController.signup); 
+        this.router.post('/refresh_token', GlobalMiddleWare.decodeRefreshToken, UserController.getNewTokens); 
+        this.router.post('/logout', GlobalMiddleWare.auth, GlobalMiddleWare.decodeRefreshToken, UserController.logout);      
+    }
 
-  deleteRoutes() {}
+    patchRoutes() {
+        this.router.patch('/reset/password', UserValidators.resetPassword(), GlobalMiddleWare.checkError, UserController.resetPassword);
+        this.router.patch('/verify/emailToken', GlobalMiddleWare.auth, UserValidators.verifyUserEmailToken(), GlobalMiddleWare.checkError, UserController.verifyUserEmailToken);
+        this.router.patch('/update/phone', GlobalMiddleWare.auth, UserValidators.verifyPhoneNumber(), GlobalMiddleWare.checkError, UserController.updatePhoneNumber);
+        this.router.patch('/update/profile', GlobalMiddleWare.auth, UserValidators.verifyUserProfile(), GlobalMiddleWare.checkError, UserController.updateUserProfile);
+    }
+
+    putRoutes() {
+    }
+
+    deleteRoutes() {}
+
 }
+
 export default new UserRouter().router;
-
-// import { Router } from "express";
-// import { UserController } from "../controllers/UserController";
-
-// class UserRouter {
-//   public router: Router;
-
-//   constructor() {
-//     this.router = Router();
-//     this.getRoutes();
-//     this.postRoutes();
-//     this.patchRoutes();
-//     this.putRoutes();
-//     this.deleteRoutes();
-//   }
-
-//   getRoutes() {
-//     // For single middleware function
-//     this.router.get("/login", UserController.login);
-
-//     // For multiple middleware functions
-//     this.router.get("/test", [UserController.test1, UserController.test2]);
-//   }
-
-//   postRoutes() {}
-//   patchRoutes() {}
-//   putRoutes() {}
-//   deleteRoutes() {}
-// }
-
-// export default new UserRouter().router;
